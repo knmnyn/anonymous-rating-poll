@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poll Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a;
+      min-height: 100vh;
+      padding: 3rem 1.5rem;
+      color: #cbd5e1;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; }
+
+    .page-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem; }
+    .page-header .icon {
+      background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+      width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+    }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; }
+    .page-header p  { font-size: 0.85rem; color: #64748b; margin-top: 0.2rem; }
+
+    .card {
+      background: #1e293b; border: 1px solid #334155; border-radius: 14px;
+      padding: 1.75rem; margin-bottom: 1.5rem;
+    }
+    .card-title {
+      font-size: 0.78rem; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1.25rem;
+    }
+
+    .field { margin-bottom: 1rem; }
+    label  { display: block; font-size: 0.82rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.35rem; }
+    .hint  { font-size: 0.75rem; color: #475569; margin-top: 0.3rem; }
+
+    input[type="text"], input[type="password"], select {
+      width: 100%; padding: 0.6rem 0.85rem;
+      background: #0f172a; border: 1.5px solid #334155; border-radius: 8px;
+      font-size: 0.9rem; color: #f1f5f9; outline: none; transition: border-color 0.2s;
+      font-family: inherit; appearance: none;
+    }
+    input:focus, select:focus { border-color: #3b5bdb; }
+    select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; }
+
+    .row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .row .field { flex: 1; min-width: 180px; }
+
+    /* Rubric section */
+    .rubric-section {
+      background: #0f172a; border: 1px solid #1e293b; border-radius: 10px;
+      padding: 1.1rem 1.25rem; margin-top: 0.5rem;
+    }
+    .rubric-title {
+      font-size: 0.78rem; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 1rem;
+    }
+
+    .scale-preset-row {
+      display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .scale-preset-row label { margin-bottom: 0; white-space: nowrap; }
+    .scale-preset-row select { flex: 1; min-width: 200px; }
+
+    .anchor-grid {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 0.6rem 0.75rem;
+      align-items: center;
+    }
+    .anchor-num {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 8px;
+      font-weight: 700; font-size: 0.95rem;
+    }
+    .anchor-num.low  { background: #450a0a; color: #fca5a5; }
+    .anchor-num.mid  { background: #1e3a5f; color: #93c5fd; }
+    .anchor-num.high { background: #14532d; color: #86efac; }
+
+    .anchor-grid input { margin-bottom: 0; }
+
+    /* Buttons */
+    .btn {
+      padding: 0.6rem 1.3rem; background: #3b5bdb; color: #fff;
+      border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn:hover { background: #2f4ac2; }
+    .btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent; border: 1px solid #334155; color: #94a3b8;
+    }
+    .btn-ghost:hover { border-color: #3b5bdb; color: #f1f5f9; background: transparent; }
+    .btn-danger  { background: #7f1d1d; }
+    .btn-danger:hover  { background: #991b1b; }
+    .btn-success { background: #14532d; }
+    .btn-success:hover { background: #166534; }
+    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+
+    #auth-error {
+      background: #450a0a; border: 1px solid #7f1d1d; border-radius: 8px;
+      padding: 0.65rem 0.9rem; color: #fca5a5; font-size: 0.85rem;
+      margin-top: 0.75rem; display: none;
+    }
+
+    #polls-section { display: none; }
+
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;
+    }
+    .section-header h2 { font-size: 1rem; font-weight: 700; color: #f1f5f9; }
+
+    .poll-card {
+      background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+      padding: 1.25rem 1.4rem; margin-bottom: 1rem; transition: border-color 0.2s;
+    }
+    .poll-card:hover { border-color: #475569; }
+
+    .poll-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+    }
+    .poll-info h3 { font-size: 1rem; font-weight: 700; color: #f1f5f9; }
+    .poll-info .sub  { font-size: 0.83rem; color: #94a3b8; margin-top: 0.2rem; }
+    .poll-info .meta { font-size: 0.75rem; color: #475569; margin-top: 0.35rem; }
+
+    .pill {
+      display: inline-block; border-radius: 999px; padding: 0.2rem 0.65rem;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .pill-open   { background: #14532d; color: #86efac; }
+    .pill-closed { background: #450a0a; color: #fca5a5; }
+
+    .poll-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+
+    .rubric-chips {
+      display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;
+    }
+    .rubric-chip {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: #0f172a; border: 1px solid #334155; border-radius: 6px;
+      padding: 0.25rem 0.6rem; font-size: 0.75rem;
+    }
+    .chip-num {
+      font-weight: 700; font-size: 0.72rem; padding: 0.1em 0.35em;
+      border-radius: 4px;
+    }
+    .chip-low  .chip-num { background:#450a0a; color:#fca5a5; }
+    .chip-mid  .chip-num { background:#1e3a5f; color:#93c5fd; }
+    .chip-high .chip-num { background:#14532d; color:#86efac; }
+
+    .poll-urls {
+      margin-top: 1rem; background: #0f172a; border: 1px solid #1e293b;
+      border-radius: 8px; padding: 0.85rem 1rem;
+    }
+    .url-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .url-row:last-child { margin-bottom: 0; }
+    .url-label { font-size: 0.72rem; color: #64748b; font-weight: 600; min-width: 70px; }
+    .url-val {
+      flex: 1; font-size: 0.78rem; color: #7dd3fc; font-family: monospace;
+      background: #1e293b; border: 1px solid #334155; border-radius: 5px;
+      padding: 0.25rem 0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .copy-btn {
+      padding: 0.25rem 0.55rem; background: #1e293b; border: 1px solid #334155;
+      border-radius: 5px; color: #94a3b8; font-size: 0.72rem; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .copy-btn:hover { border-color: #3b5bdb; color: #f1f5f9; }
+    .copy-btn.copied { border-color: #16a34a; color: #86efac; }
+
+    .stats-mini { display: flex; gap: 1.25rem; margin-top: 0.85rem; flex-wrap: wrap; }
+    .stat-mini .val { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; }
+    .stat-mini .lbl { font-size: 0.72rem; color: #64748b; }
+
+    #create-form { display: none; }
+
+    .empty { text-align: center; padding: 2.5rem 1rem; color: #475569; font-size: 0.9rem; }
+
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      padding: 0.75rem 1.1rem; font-size: 0.85rem; color: #f1f5f9;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4); opacity: 0;
+      transition: opacity 0.25s; pointer-events: none; z-index: 999;
+    }
+    #toast.show { opacity: 1; }
+
+    hr { border: none; border-top: 1px solid #1e293b; margin: 1.25rem 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <div class="icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Poll Manager</h1>
+      <p>Create and manage anonymous rating polls. Superuser access only.</p>
+    </div>
+  </div>
+
+  <!-- Auth -->
+  <div class="card" id="auth-card">
+    <div class="card-title">Authentication</div>
+    <div class="row">
+      <div class="field">
+        <label for="script-url">Apps Script Web App URL</label>
+        <input type="text" id="script-url" placeholder="https://script.google.com/macros/s/…/exec" />
+      </div>
+      <div class="field">
+        <label for="su-key">Superuser Key</label>
+        <input type="password" id="su-key" placeholder="Your superuser key" />
+      </div>
+    </div>
+    <button class="btn" onclick="authenticate()">Connect</button>
+    <div id="auth-error"></div>
+  </div>
+
+  <!-- Polls section -->
+  <div id="polls-section">
+    <div class="section-header">
+      <h2 id="polls-heading">All Polls</h2>
+      <button class="btn" onclick="toggleCreateForm()">+ New Poll</button>
+    </div>
+
+    <!-- Create form -->
+    <div class="card" id="create-form">
+      <div class="card-title">Create New Poll</div>
+
+      <div class="row">
+        <div class="field">
+          <label>Poll Title</label>
+          <input type="text" id="new-title" placeholder="e.g. Faculty Hiring Vote" />
+        </div>
+        <div class="field">
+          <label>Subject / Item Being Rated <span style="font-weight:400;color:#475569">(optional)</span></label>
+          <input type="text" id="new-subject" placeholder="e.g. Dr. Alex Johnson" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Subtitle / Instructions <span style="font-weight:400;color:#475569">(optional)</span></label>
+          <input type="text" id="new-subtitle" placeholder="e.g. Rate the candidate on a 1–9 scale." />
+        </div>
+        <div class="field">
+          <label>Badge Label <span style="font-weight:400;color:#475569">(shown top-left)</span></label>
+          <input type="text" id="new-badge" placeholder="e.g. Committee Vote" value="Vote" />
+        </div>
+      </div>
+
+      <hr />
+
+      <!-- Rubric -->
+      <div class="rubric-section">
+        <div class="rubric-title">Rating Scale (Rubric)</div>
+
+        <div class="scale-preset-row">
+          <label for="scale-preset">Preset scale:</label>
+          <select id="scale-preset" onchange="applyPreset()">
+            <option value="">— choose a preset or define your own —</option>
+            <option value="agreement">Agreement (Strongly Disagree → Strongly Agree)</option>
+            <option value="quality">Quality (Very Poor → Excellent)</option>
+            <option value="likelihood">Likelihood (Very Unlikely → Very Likely)</option>
+            <option value="hire">Hire Recommendation (Do Not Hire → Strong Hire)</option>
+            <option value="confidence">Confidence (Not at All Confident → Extremely Confident)</option>
+            <option value="importance">Importance (Not Important → Critically Important)</option>
+            <option value="satisfaction">Satisfaction (Very Dissatisfied → Very Satisfied)</option>
+            <option value="custom">Custom (define your own)</option>
+          </select>
+        </div>
+
+        <p class="hint" style="margin-bottom:0.85rem">Only three anchor points are used: ratings 1, 5, and 9. Intermediate values are implied.</p>
+
+        <div class="anchor-grid">
+          <div class="anchor-num low">1</div>
+          <div class="field" style="margin:0">
+            <input type="text" id="scale-low" placeholder="Label for rating 1 (lowest)" />
+          </div>
+
+          <div class="anchor-num mid">5</div>
+          <div class="field" style="margin:0">
+            <input type="text" id="scale-mid" placeholder="Label for rating 5 (midpoint)" />
+          </div>
+
+          <div class="anchor-num high">9</div>
+          <div class="field" style="margin:0">
+            <input type="text" id="scale-high" placeholder="Label for rating 9 (highest)" />
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;margin-top:1.25rem">
+        <button class="btn" onclick="createPoll()">Create Poll</button>
+        <button class="btn btn-ghost" onclick="toggleCreateForm()">Cancel</button>
+      </div>
+    </div>
+
+    <div id="polls-list"></div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="poll-config.js"></script>
+<script>
+  // ── Preset scales ───────────────────────────────────────────────────────────
+  const PRESETS = {
+    agreement:    { low: 'Strongly Disagree', mid: 'Neutral',              high: 'Strongly Agree' },
+    quality:      { low: 'Very Poor',         mid: 'Acceptable',           high: 'Excellent' },
+    likelihood:   { low: 'Very Unlikely',     mid: 'Somewhat Likely',      high: 'Very Likely' },
+    hire:         { low: 'Do Not Hire',       mid: 'Borderline',           high: 'Strong Hire' },
+    confidence:   { low: 'Not at All Confident', mid: 'Moderately Confident', high: 'Extremely Confident' },
+    importance:   { low: 'Not Important',     mid: 'Moderately Important', high: 'Critically Important' },
+    satisfaction: { low: 'Very Dissatisfied', mid: 'Neutral',              high: 'Very Satisfied' },
+    custom:       { low: '', mid: '', high: '' }
+  };
+
+  function applyPreset() {
+    const key    = document.getElementById('scale-preset').value;
+    const preset = PRESETS[key];
+    if (!preset) return;
+    document.getElementById('scale-low').value  = preset.low;
+    document.getElementById('scale-mid').value  = preset.mid;
+    document.getElementById('scale-high').value = preset.high;
+    if (key === 'custom') {
+      document.getElementById('scale-low').focus();
+    }
+  }
+
+  // ── State ───────────────────────────────────────────────────────────────────
+  let SCRIPT_URL = '';
+  let SU_KEY     = '';
+  let BASE_URL   = window.location.origin + window.location.pathname.replace('manage-polls.html', '');
+  let pollsData  = [];
+
+  if (window.APPS_SCRIPT_URL && window.APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
+    document.getElementById('script-url').value = window.APPS_SCRIPT_URL;
+  }
+
+  // ── Auth ────────────────────────────────────────────────────────────────────
+  async function authenticate() {
+    SCRIPT_URL = document.getElementById('script-url').value.trim();
+    SU_KEY     = document.getElementById('su-key').value.trim();
+    const errEl = document.getElementById('auth-error');
+    errEl.style.display = 'none';
+    if (!SCRIPT_URL || !SU_KEY) { showAuthError('Please fill in both fields.'); return; }
+
+    try {
+      const data = await apiFetch({ action: 'listPolls', key: SU_KEY });
+      if (!data.ok) { showAuthError(data.error === 'Unauthorized' ? '❌ Invalid superuser key.' : '❌ ' + data.error); return; }
+      pollsData = data.polls || [];
+      document.getElementById('auth-card').style.display = 'none';
+      document.getElementById('polls-section').style.display = 'block';
+      renderPolls();
+    } catch (e) { showAuthError('❌ Connection failed: ' + e.message); }
+  }
+
+  function showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg; el.style.display = 'block';
+  }
+
+  // ── Render polls ─────────────────────────────────────────────────────────────
+  function renderPolls() {
+    const container = document.getElementById('polls-list');
+    document.getElementById('polls-heading').textContent = `All Polls (${pollsData.length})`;
+
+    if (!pollsData.length) {
+      container.innerHTML = '<div class="empty">No polls yet. Click "+ New Poll" to create one.</div>';
+      return;
+    }
+
+    container.innerHTML = pollsData.map(poll => {
+      const voteUrl  = `${BASE_URL}vote.html??poll=${poll.token}`;
+      const adminUrl = `${BASE_URL}view-results.html??poll=${poll.token}`;
+      const created  = poll.createdAt ? new Date(poll.createdAt).toLocaleDateString() : '—';
+      const avgStr   = poll.average !== null && poll.average !== undefined ? Number(poll.average).toFixed(2) : '—';
+      const displayTitle = poll.subject ? `${esc(poll.title)}: ${esc(poll.subject)}` : esc(poll.title);
+
+      const rubricChips = [
+        poll.scaleLow  ? `<span class="rubric-chip chip-low"><span class="chip-num">1</span>${esc(poll.scaleLow)}</span>`  : '',
+        poll.scaleMid  ? `<span class="rubric-chip chip-mid"><span class="chip-num">5</span>${esc(poll.scaleMid)}</span>`  : '',
+        poll.scaleHigh ? `<span class="rubric-chip chip-high"><span class="chip-num">9</span>${esc(poll.scaleHigh)}</span>` : ''
+      ].filter(Boolean).join('');
+
+      return `
+      <div class="poll-card" id="card-${poll.token}">
+        <div class="poll-top">
+          <div class="poll-info">
+            <h3>${displayTitle}</h3>
+            ${poll.subtitle ? `<div class="sub">${esc(poll.subtitle)}</div>` : ''}
+            <div class="meta">Token: <code style="color:#7dd3fc">${poll.token}</code> &nbsp;·&nbsp; Created: ${created}</div>
+          </div>
+          <div class="poll-actions">
+            <span class="pill ${poll.status === 'open' ? 'pill-open' : 'pill-closed'}">${poll.status}</span>
+            ${poll.status === 'open'
+              ? `<button class="btn btn-sm btn-danger"  onclick="setStatus('${poll.token}','closed')">Close Poll</button>`
+              : `<button class="btn btn-sm btn-success" onclick="setStatus('${poll.token}','open')">Reopen Poll</button>`}
+          </div>
+        </div>
+
+        ${rubricChips ? `<div class="rubric-chips">${rubricChips}</div>` : ''}
+
+        <div class="stats-mini">
+          <div class="stat-mini"><div class="val">${poll.voteCount}</div><div class="lbl">Votes</div></div>
+          <div class="stat-mini"><div class="val">${avgStr}</div><div class="lbl">Average</div></div>
+        </div>
+
+        <div class="poll-urls">
+          <div class="url-row">
+            <span class="url-label">Vote URL</span>
+            <span class="url-val" title="${voteUrl}">${voteUrl}</span>
+            <button class="copy-btn" onclick="copyUrl(this,'${voteUrl}')">Copy</button>
+          </div>
+          <div class="url-row">
+            <span class="url-label">Admin URL</span>
+            <span class="url-val" title="${adminUrl}">${adminUrl}</span>
+            <button class="copy-btn" onclick="copyUrl(this,'${adminUrl}')">Copy</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Create poll ──────────────────────────────────────────────────────────────
+  function toggleCreateForm() {
+    const f = document.getElementById('create-form');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function createPoll() {
+    const title     = document.getElementById('new-title').value.trim();
+    const subject   = document.getElementById('new-subject').value.trim();
+    const subtitle  = document.getElementById('new-subtitle').value.trim();
+    const badge     = document.getElementById('new-badge').value.trim() || 'Vote';
+    const scaleLow  = document.getElementById('scale-low').value.trim();
+    const scaleMid  = document.getElementById('scale-mid').value.trim();
+    const scaleHigh = document.getElementById('scale-high').value.trim();
+
+    if (!title) { toast('Please enter a poll title.'); return; }
+    if (!scaleLow || !scaleMid || !scaleHigh) {
+      toast('Please fill in all three scale anchor labels (1, 5, and 9).'); return;
+    }
+
+    try {
+      const data = await apiFetch({
+        action: 'createPoll', key: SU_KEY,
+        title, subject, subtitle, badge,
+        scaleLow, scaleMid, scaleHigh
+      });
+      if (!data.ok) { toast('❌ ' + data.error); return; }
+      toast('✅ Poll created! Token: ' + data.token);
+      document.getElementById('create-form').style.display = 'none';
+      // Reset form
+      ['new-title','new-subject','new-subtitle','scale-low','scale-mid','scale-high'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('new-badge').value = 'Vote';
+      document.getElementById('scale-preset').value = '';
+      const list = await apiFetch({ action: 'listPolls', key: SU_KEY });
+      pollsData = list.polls || [];
+      renderPolls();
+    } catch (e) { toast('❌ ' + e.message); }
+  }
+
+  // ── Open / close ─────────────────────────────────────────────────────────────
+  async function setStatus(token, status) {
+    try {
+      const data = await apiFetch({ action: 'setPollStatus', key: SU_KEY, poll: token, status });
+      if (!data.ok) { toast('❌ ' + data.error); return; }
+      toast(status === 'open' ? 'Poll reopened ✅' : 'Poll closed 🔒');
+      const list = await apiFetch({ action: 'listPolls', key: SU_KEY });
+      pollsData = list.polls || [];
+      renderPolls();
+    } catch (e) { toast('❌ ' + e.message); }
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  async function apiFetch(params) {
+    const qs  = Object.entries(params).map(([k,v]) => k + '=' + encodeURIComponent(v)).join('&');
+    const res = await fetch(SCRIPT_URL + '?' + qs);
+    return res.json();
+  }
+
+  function copyUrl(btn, url) {
+    navigator.clipboard.writeText(url).then(() => {
+      btn.textContent = 'Copied!'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>

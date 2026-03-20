@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poll</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 2.5rem 2rem;
+      max-width: 560px;
+      width: 100%;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #e8f0fe;
+      color: #3b5bdb;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 999px;
+      padding: 0.25rem 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.4rem; }
+    .subtitle { color: #6b7280; font-size: 0.95rem; margin-bottom: 0.75rem; }
+
+    .privacy-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.82rem;
+      color: #166534;
+      margin-bottom: 1.75rem;
+    }
+    .privacy-note svg { flex-shrink: 0; margin-top: 1px; }
+
+    .field { margin-bottom: 1.5rem; }
+
+    label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    input[type="email"] {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #111827;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    input[type="email"]:focus { border-color: #3b5bdb; }
+
+    /* Rating grid */
+    .rating-grid {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 6px;
+      margin-bottom: 0.5rem;
+    }
+    .rating-grid input[type="radio"] { display: none; }
+    .rating-grid label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 44px;
+      border-radius: 8px;
+      border: 1.5px solid #d1d5db;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+      background: #f9fafb;
+    }
+    .rating-grid input[type="radio"]:checked + label {
+      background: #3b5bdb;
+      border-color: #3b5bdb;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(59,91,219,0.3);
+    }
+    .rating-grid label:hover { border-color: #3b5bdb; color: #3b5bdb; background: #eef2ff; }
+
+    /* Rubric anchors */
+    .rubric-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-top: 0.6rem;
+    }
+    .rubric-anchor {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      color: #6b7280;
+      max-width: 33%;
+    }
+    .rubric-anchor.mid { justify-content: center; text-align: center; }
+    .rubric-anchor.high { justify-content: flex-end; text-align: right; }
+    .anchor-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px; height: 20px;
+      border-radius: 5px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .anchor-num.low  { background: #fee2e2; color: #991b1b; }
+    .anchor-num.mid  { background: #dbeafe; color: #1d4ed8; }
+    .anchor-num.high { background: #dcfce7; color: #15803d; }
+
+    /* Comment textarea */
+    textarea {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 0.93rem;
+      color: #111827;
+      font-family: inherit;
+      line-height: 1.55;
+      resize: vertical;
+      min-height: 100px;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    textarea:focus { border-color: #3b5bdb; }
+    .char-count { font-size: 0.75rem; color: #9ca3af; text-align: right; margin-top: 0.3rem; }
+
+    .btn {
+      width: 100%;
+      padding: 0.8rem;
+      background: #3b5bdb;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn:hover { background: #2f4ac2; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    #status { margin-top: 1rem; text-align: center; font-size: 0.9rem; min-height: 1.4em; }
+    .status-success { color: #16a34a; font-weight: 600; }
+    .status-error   { color: #dc2626; font-weight: 600; }
+    .status-loading { color: #6b7280; }
+
+    .banner {
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      font-size: 0.92rem;
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+    .banner-green { background:#f0fdf4; border:1.5px solid #86efac; color:#14532d; }
+    .banner-red   { background:#fef2f2; border:1.5px solid #fca5a5; color:#7f1d1d; }
+    #config-notice code { background:#fee2e2; padding:.1em .3em; border-radius:4px; }
+
+    #closed-overlay {
+      display: none;
+      text-align: center;
+      padding: 1.5rem 0 0.5rem;
+    }
+    #closed-overlay .closed-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    #closed-overlay h2 { font-size: 1.1rem; font-weight: 700; color: #374151; }
+    #closed-overlay p  { font-size: 0.88rem; color: #6b7280; margin-top: 0.4rem; }
+
+    #loading-state { text-align:center; color:#9ca3af; padding:2rem 0; font-size:0.9rem; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <span class="badge" id="poll-badge">Vote</span>
+  <h1 id="poll-title">Loading…</h1>
+  <p class="subtitle" id="poll-subtitle"></p>
+
+  <div id="loading-state">Loading poll…</div>
+
+  <div id="poll-body" style="display:none">
+
+    <div class="privacy-note">
+      <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 1a9 9 0 100 18A9 9 0 0010 1zm.75 4.75a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0v-4.5zm-.75 7a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd"/>
+      </svg>
+      <span>Your email is used only to prevent duplicate votes. It is <strong>never stored</strong> — only a short anonymous ID is recorded alongside your rating.</span>
+    </div>
+
+    <div id="config-notice" class="banner banner-red">
+      ⚠️ <strong>Setup required:</strong> Open <code>poll-config.js</code> and set your <code>APPS_SCRIPT_URL</code>. See <a href="SETUP.md">SETUP.md</a>.
+    </div>
+
+    <div id="already-voted-msg" class="banner banner-green">
+      ✅ You have already submitted your vote. Thank you!
+    </div>
+
+    <div id="closed-overlay">
+      <div class="closed-icon">🔒</div>
+      <h2>This poll is closed</h2>
+      <p>Voting has ended. Thank you for your participation.</p>
+    </div>
+
+    <form id="poll-form">
+      <div class="field">
+        <label for="voter-email">Your Email Address</label>
+        <input type="email" id="voter-email" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+
+      <div class="field">
+        <label>Your Rating (1–9)</label>
+        <div class="rating-grid" id="rating-grid"></div>
+
+        <!-- Rubric anchors — populated from poll metadata -->
+        <div class="rubric-bar" id="rubric-bar" style="display:none">
+          <div class="rubric-anchor low">
+            <span class="anchor-num low">1</span>
+            <span id="rubric-low"></span>
+          </div>
+          <div class="rubric-anchor mid">
+            <span class="anchor-num mid">5</span>
+            <span id="rubric-mid"></span>
+          </div>
+          <div class="rubric-anchor high">
+            <span id="rubric-high"></span>
+            <span class="anchor-num high">9</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="comment">Comments <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+        <textarea id="comment" placeholder="Share any observations, reasoning, or context for your rating…" maxlength="2000" oninput="updateCharCount()"></textarea>
+        <div class="char-count"><span id="char-count">0</span> / 2000</div>
+      </div>
+
+      <button type="submit" class="btn" id="submit-btn">Submit Vote</button>
+      <div id="status"></div>
+    </form>
+
+  </div>
+</div>
+
+<script src="poll-config.js"></script>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const pollToken = urlParams.get('poll') || '';
+
+  // Build 1–9 radio buttons
+  const grid = document.getElementById('rating-grid');
+  for (let i = 1; i <= 9; i++) {
+    const inp = document.createElement('input');
+    inp.type = 'radio'; inp.name = 'rating'; inp.id = `r${i}`; inp.value = i;
+    const lbl = document.createElement('label');
+    lbl.htmlFor = `r${i}`; lbl.textContent = i;
+    grid.appendChild(inp); grid.appendChild(lbl);
+  }
+
+  function updateCharCount() {
+    const val = document.getElementById('comment').value.length;
+    document.getElementById('char-count').textContent = val;
+  }
+
+  async function init() {
+    if (!window.APPS_SCRIPT_URL || window.APPS_SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('poll-body').style.display = 'block';
+      document.getElementById('config-notice').style.display = 'block';
+      document.getElementById('poll-title').textContent = 'Poll';
+      return;
+    }
+
+    if (!pollToken) {
+      document.getElementById('loading-state').textContent =
+        '⚠️ No poll link found. Please use the link provided by the poll organiser.';
+      return;
+    }
+
+    try {
+      const res  = await fetch(window.APPS_SCRIPT_URL + '?action=pollInfo&poll=' + encodeURIComponent(pollToken));
+      const data = await res.json();
+
+      if (!data.ok) {
+        document.getElementById('loading-state').textContent =
+          '❌ Poll not found. Check your link or contact the organiser.';
+        return;
+      }
+
+      // Title
+      const title = data.title || 'Poll';
+      document.title = data.subject ? `${title}: ${data.subject}` : title;
+      document.getElementById('poll-title').textContent = document.title;
+      document.getElementById('poll-subtitle').textContent = data.subtitle || '';
+      if (data.badge) document.getElementById('poll-badge').textContent = data.badge;
+
+      // Rubric anchors
+      if (data.scaleLow || data.scaleMid || data.scaleHigh) {
+        document.getElementById('rubric-low').textContent  = data.scaleLow  || '';
+        document.getElementById('rubric-mid').textContent  = data.scaleMid  || '';
+        document.getElementById('rubric-high').textContent = data.scaleHigh || '';
+        document.getElementById('rubric-bar').style.display = 'flex';
+      }
+
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('poll-body').style.display = 'block';
+
+      if (localStorage.getItem('voted_' + pollToken)) {
+        document.getElementById('already-voted-msg').style.display = 'block';
+        lockForm();
+      }
+
+      if (data.status === 'closed') showClosed();
+
+    } catch (err) {
+      document.getElementById('loading-state').textContent =
+        '❌ Could not load poll. Please try again later.';
+    }
+  }
+
+  document.getElementById('poll-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email   = document.getElementById('voter-email').value.trim().toLowerCase();
+    const rating  = document.querySelector('input[name="rating"]:checked');
+    const comment = document.getElementById('comment').value.trim();
+    const btn     = document.getElementById('submit-btn');
+
+    if (!email)  { setStatus('Please enter your email address.', 'error'); return; }
+    if (!rating) { setStatus('Please select a rating (1–9).', 'error'); return; }
+
+    btn.disabled = true;
+    setStatus('Submitting…', 'loading');
+
+    const url = window.APPS_SCRIPT_URL
+      + '?action=vote'
+      + '&poll='      + encodeURIComponent(pollToken)
+      + '&email='     + encodeURIComponent(email)
+      + '&rating='    + encodeURIComponent(rating.value)
+      + '&comment='   + encodeURIComponent(comment)
+      + '&timestamp=' + encodeURIComponent(new Date().toISOString());
+
+    try {
+      await fetch(url, { method: 'GET', mode: 'no-cors' });
+      localStorage.setItem('voted_' + pollToken, '1');
+      setStatus('✅ Vote submitted! Thank you.', 'success');
+      document.getElementById('already-voted-msg').style.display = 'block';
+      lockForm();
+    } catch (err) {
+      btn.disabled = false;
+      setStatus('❌ Submission failed. Please try again.', 'error');
+    }
+  });
+
+  function lockForm() {
+    const f = document.getElementById('poll-form');
+    f.style.opacity = '0.35';
+    f.style.pointerEvents = 'none';
+  }
+
+  function showClosed() {
+    document.getElementById('closed-overlay').style.display = 'block';
+    document.getElementById('poll-form').style.display = 'none';
+  }
+
+  function setStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = type === 'success' ? 'status-success'
+                 : type === 'error'   ? 'status-error'
+                 : 'status-loading';
+  }
+
+  init();
+</script>
+</body>
+</html>

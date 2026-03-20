@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poll Admin — Vote Attribution</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+    }
+
+    .container { max-width: 860px; width: 100%; }
+
+    .header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
+    .lock-icon {
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .header-text h1 { font-size: 1.4rem; font-weight: 700; color: #f1f5f9; }
+    .header-text p  { font-size: 0.85rem; color: #64748b; margin-top: 0.2rem; }
+
+    .card {
+      background: #1e293b; border: 1px solid #334155; border-radius: 14px;
+      padding: 1.75rem; margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      font-size: 0.8rem; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 1rem;
+    }
+
+    .field { margin-bottom: 1rem; }
+    label  { display: block; font-size: 0.82rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.4rem; }
+
+    input[type="password"], input[type="text"], textarea {
+      width: 100%; padding: 0.6rem 0.85rem;
+      background: #0f172a; border: 1.5px solid #334155; border-radius: 8px;
+      font-size: 0.9rem; color: #f1f5f9; outline: none; transition: border-color 0.2s; font-family: inherit;
+    }
+    input:focus, textarea:focus { border-color: #3b5bdb; }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .hint { font-size: 0.78rem; color: #475569; margin-top: 0.35rem; }
+
+    .row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .row .field { flex: 1; min-width: 180px; }
+
+    .btn {
+      padding: 0.65rem 1.4rem; background: #3b5bdb; color: #fff;
+      border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .btn:hover { background: #2f4ac2; }
+    .btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+
+    #error-msg {
+      background: #450a0a; border: 1px solid #7f1d1d; border-radius: 8px;
+      padding: 0.75rem 1rem; color: #fca5a5; font-size: 0.88rem;
+      margin-top: 1rem; display: none;
+    }
+
+    #results-section { display: none; }
+
+    .poll-banner {
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;
+    }
+    .poll-banner h3 { font-size: 1rem; font-weight: 700; color: #f1f5f9; }
+    .poll-banner .meta { font-size: 0.8rem; color: #64748b; margin-top: 0.2rem; }
+    .pill {
+      display: inline-block; border-radius: 999px; padding: 0.2rem 0.65rem;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .pill-open   { background: #14532d; color: #86efac; }
+    .pill-closed { background: #450a0a; color: #fca5a5; }
+
+    .stats-row { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .stat {
+      background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+      padding: 0.85rem 1.25rem; flex: 1; min-width: 120px;
+    }
+    .stat .val { font-size: 1.6rem; font-weight: 700; color: #f1f5f9; }
+    .stat .lbl { font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; }
+
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    thead th {
+      background: #0f172a; color: #94a3b8; font-weight: 600; text-align: left;
+      padding: 0.65rem 0.85rem; border-bottom: 1px solid #334155; white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #1e293b; }
+    tbody tr:hover { background: #1e293b; }
+    tbody td { padding: 0.65rem 0.85rem; color: #cbd5e1; vertical-align: top; }
+
+    .anon-id {
+      font-family: monospace; background: #0f172a; border: 1px solid #334155;
+      border-radius: 4px; padding: 0.1em 0.4em; font-size: 0.85rem; color: #7dd3fc;
+    }
+    .rating-pill {
+      display: inline-block; font-weight: 700; width: 28px; height: 28px;
+      line-height: 28px; text-align: center; border-radius: 6px; font-size: 0.9rem;
+    }
+    .email-cell { color: #a5f3fc; font-size: 0.85rem; }
+    .unmatched  { color: #475569; font-style: italic; font-size: 0.82rem; }
+
+    .export-btn {
+      margin-top: 1rem; padding: 0.55rem 1.1rem;
+      background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+      color: #94a3b8; font-size: 0.82rem; cursor: pointer; transition: border-color 0.2s, color 0.2s;
+    }
+    .export-btn:hover { border-color: #3b5bdb; color: #f1f5f9; }
+
+    .warning-banner {
+      background: #451a03; border: 1px solid #92400e; border-radius: 10px;
+      padding: 0.75rem 1rem; font-size: 0.82rem; color: #fcd34d; margin-bottom: 1.5rem;
+    }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.82rem; color: #64748b; text-decoration: none; margin-bottom: 1.5rem;
+    }
+    .back-link:hover { color: #94a3b8; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <a href="manage-polls.html" class="back-link">← Back to Poll Manager</a>
+
+  <div class="header">
+    <div class="lock-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Vote Attribution</h1>
+      <p>Superuser access only. Results are not stored in this browser.</p>
+    </div>
+  </div>
+
+  <div class="warning-banner">
+    ⚠️ This page reveals the identity behind anonymous votes. Use responsibly and only when required for audit purposes.
+  </div>
+
+  <!-- Auth + query form -->
+  <div class="card">
+    <h2>Authentication &amp; Query</h2>
+
+    <div class="row">
+      <div class="field">
+        <label for="script-url">Apps Script Web App URL</label>
+        <input type="text" id="script-url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="superuser-key">Superuser Key</label>
+        <input type="password" id="superuser-key" placeholder="Enter your superuser key" autocomplete="off" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="poll-token">Poll Token</label>
+      <input type="text" id="poll-token" placeholder="e.g. a3f8c2d1" autocomplete="off" />
+      <p class="hint">Found in the Poll Manager, or at the end of the vote URL: <code>?poll=TOKEN</code></p>
+    </div>
+
+    <div class="field">
+      <label for="known-emails">Known Voter Emails <span style="font-weight:400;color:#475569">(optional — for attribution)</span></label>
+      <textarea id="known-emails" placeholder="alice@university.edu&#10;bob@university.edu&#10;carol@university.edu"></textarea>
+      <p class="hint">One email per line. Only emails listed here can be matched to anonymous IDs.</p>
+    </div>
+
+    <button class="btn" id="fetch-btn" onclick="fetchResults()">Fetch Results</button>
+    <div id="error-msg"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results-section">
+    <div id="poll-banner" class="poll-banner"></div>
+    <div class="stats-row" id="stats-row"></div>
+
+    <div class="card">
+      <h2>Vote Table</h2>
+      <div class="table-wrap">
+        <table id="votes-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Anon ID</th>
+              <th>Email (if matched)</th>
+              <th>Rating</th>
+              <th>Comment</th>
+            </tr>
+          </thead>
+          <tbody id="votes-tbody"></tbody>
+        </table>
+      </div>
+      <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="poll-config.js"></script>
+<script>
+  // Pre-fill from config and URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  if (window.APPS_SCRIPT_URL && window.APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
+    document.getElementById('script-url').value = window.APPS_SCRIPT_URL;
+  }
+  if (urlParams.get('poll')) {
+    document.getElementById('poll-token').value = urlParams.get('poll');
+  }
+
+  let lastData = null;
+
+  async function fetchResults() {
+    const url     = document.getElementById('script-url').value.trim();
+    const key     = document.getElementById('superuser-key').value.trim();
+    const token   = document.getElementById('poll-token').value.trim();
+    const rawEmails = document.getElementById('known-emails').value.trim();
+    const emails  = rawEmails.split('\n').map(e => e.trim().toLowerCase()).filter(Boolean).join(',');
+    const btn     = document.getElementById('fetch-btn');
+    const errEl   = document.getElementById('error-msg');
+
+    errEl.style.display = 'none';
+    if (!url)   { showError('Please enter the Apps Script URL.'); return; }
+    if (!key)   { showError('Please enter the superuser key.'); return; }
+    if (!token) { showError('Please enter the poll token.'); return; }
+
+    btn.disabled = true; btn.textContent = 'Fetching…';
+
+    const queryUrl = url
+      + '?action=admin'
+      + '&key='    + encodeURIComponent(key)
+      + '&poll='   + encodeURIComponent(token)
+      + '&emails=' + encodeURIComponent(emails);
+
+    try {
+      const res  = await fetch(queryUrl);
+      const data = await res.json();
+
+      if (!data.ok) {
+        showError(data.error === 'Unauthorized' ? '❌ Invalid superuser key.' : '❌ ' + data.error);
+        return;
+      }
+
+      lastData = data;
+      renderResults(data);
+    } catch (err) {
+      showError('❌ Request failed. Check the URL and try again. (' + err.message + ')');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Fetch Results';
+    }
+  }
+
+  function renderResults(data) {
+    const votes = data.votes || [];
+    const poll  = data.poll  || {};
+
+    // Poll banner
+    document.getElementById('poll-banner').innerHTML = `
+      <div>
+        <h3>${esc(poll.title || '')}${poll.candidate ? ': ' + esc(poll.candidate) : ''}</h3>
+        <div class="meta">Token: <code style="color:#7dd3fc">${esc(poll.token || '')}</code></div>
+      </div>
+      <span class="pill ${poll.status === 'open' ? 'pill-open' : 'pill-closed'}">${poll.status || ''}</span>
+    `;
+
+    // Stats
+    const ratings = votes.map(v => parseInt(v.rating, 10)).filter(r => !isNaN(r));
+    const avg     = ratings.length ? (ratings.reduce((a,b) => a+b, 0) / ratings.length).toFixed(2) : '—';
+    const matched = votes.filter(v => v.email).length;
+
+    document.getElementById('stats-row').innerHTML = `
+      <div class="stat"><div class="val">${votes.length}</div><div class="lbl">Total Votes</div></div>
+      <div class="stat"><div class="val">${avg}</div><div class="lbl">Average Rating</div></div>
+      <div class="stat"><div class="val">${matched}</div><div class="lbl">Emails Matched</div></div>
+      <div class="stat"><div class="val">${votes.length - matched}</div><div class="lbl">Still Anonymous</div></div>
+    `;
+
+    // Table
+    const tbody = document.getElementById('votes-tbody');
+    tbody.innerHTML = '';
+    votes.forEach(v => {
+      const r   = parseInt(v.rating, 10);
+      const hue = Math.round(((r - 1) / 8) * 120);
+      const bg  = `hsl(${hue},60%,25%)`;
+      const fg  = `hsl(${hue},80%,75%)`;
+      const ts  = v.timestamp ? new Date(v.timestamp).toLocaleString() : '—';
+      const emailCell = v.email
+        ? `<span class="email-cell">${esc(v.email)}</span>`
+        : `<span class="unmatched">not matched</span>`;
+
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td style="white-space:nowrap;font-size:0.8rem;color:#64748b">${ts}</td>
+          <td><span class="anon-id">${esc(v.anonId)}</span></td>
+          <td>${emailCell}</td>
+          <td><span class="rating-pill" style="background:${bg};color:${fg}">${r}</span></td>
+          <td>${esc(v.comment || '')}</td>
+        </tr>
+      `);
+    });
+
+    document.getElementById('results-section').style.display = 'block';
+    document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function exportCSV() {
+    if (!lastData) return;
+    const poll = lastData.poll || {};
+    const rows = [['Poll Token','Poll Title','Timestamp','Anon ID','Email','Rating','Comment']];
+    lastData.votes.forEach(v => {
+      rows.push([
+        poll.token || '', poll.title || '',
+        v.timestamp, v.anonId, v.email || '', v.rating,
+        (v.comment || '').replace(/,/g,'；')
+      ]);
+    });
+    const csv  = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(blob);
+    a.download = `poll-${poll.token || 'results'}.csv`;
+    a.click();
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg; el.style.display = 'block';
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
