@@ -293,7 +293,11 @@ function handleAdmin(p) {
 // HMAC HELPER
 // ═══════════════════════════════════════════════════════════════════════════════
 function makeAnonId(email) {
-  var raw = Utilities.computeHmacSha256Signature(email, HMAC_SECRET);
+  // Apps Script requires the HMAC key as a byte array (Utilities.Charset or encoded bytes).
+  // We encode the secret as UTF-8 bytes using Utilities.newBlob to avoid the 400 error
+  // that occurs when a plain string is passed as the key.
+  var keyBytes = Utilities.newBlob(HMAC_SECRET).getBytes();
+  var raw = Utilities.computeHmacSha256Signature(email, keyBytes);
   var hex = raw.map(function(b) {
     return ('0' + (b & 0xff).toString(16)).slice(-2);
   }).join('');
@@ -324,7 +328,7 @@ function getOrCreatePollsSheet(ss) {
                      'Scale Low (1)','Scale Mid (5)','Scale High (9)']);
     sheet.setFrozenRows(1);
     styleHeader(sheet, 10);
-    sheet.setColumnWidths(1, 10, 150);
+    for (var c = 1; c <= 10; c++) { sheet.setColumnWidth(c, 150); }
   }
   return sheet;
 }
