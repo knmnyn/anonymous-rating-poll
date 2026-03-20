@@ -4,4 +4,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Paste your deployed Apps Script Web App URL here (from Step 3 of SETUP.md):
-window.APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+window.APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8mmwxjCLJfvZbV1536J9rf7nV3RYaEupGLlZkFngFjHd088tj2cRVy15HzrqwdbBT1A/exec';
